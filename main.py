@@ -1,28 +1,57 @@
 import requests
 import json
 import os
-from time import sleep
 
-def getMetadata(name) -> list:
-    download_file("https://wspm.pages.dev/" + name + "/metadata", "metdata")
-    with open("metdata", "r") as f:
-        metadata = json.loads(f.readlines()[0])
-        pkgFiles = metadata['files'].replace("'", "").removesuffix("]").removeprefix("[").split(",")
-    return pkgFiles
+def metaSave(path, data):
+    data = str(data).replace("'", '"')
+    try:
+        with open(os.path.join(path, "metadata"), 'w') as f:
+            f.write(data)
+    except OSError:
+        os.mkdir(path)
+        with open(os.path.join(path, "metadata"), 'w') as f:
+            f.write(data)
 
-def download_file(url, save_path):
+def saveFile(path, name, data):
+    try:
+        with open(os.path.join(path, name), 'wb') as f:
+            f.write(data)
+    except OSError:
+        os.mkdir(path)
+        with open(os.path.join(path, name), 'wb') as f:
+            f.write(data)
+
+def readCurrentVersion(packageName):
+    with open(os.path.join(os.getcwd(), "packages", packageName, "metadata"), "r") as f:
+        data = f.read()
+        return json.loads(data)["version"]
+
+def download_file(url):
+    print("Retrieving " + url)
     response = requests.get(url)
     if response.status_code == 200:
-        with open(save_path, 'wb') as f:
-            f.write(response.content)
-        print("File downloaded successfully.")
+        return response.content
     else:
         print("Failed to download file.")
 
-def dl(packageName):
-    files = getMetadata(packageName)
-    print(files)
-    for file in files:
-        download_file("https://wspm.pages.dev/" + packageName + "/" + file, file)
+def getMetadata(name) -> list:
+    return json.loads(download_file("https://wspm.pages.dev/" + name + "/metadata"))
 
-dl("allwords")
+def install(packageName):
+    print("Installing " + packageName)
+    metadata = getMetadata(packageName)
+    files = metadata['files'].split(",")
+    if metadata["version"] > readCurrentVersion(packageName):
+        try:
+            metaSave(os.path.join(os.getcwd(), "packages", packageName), metadata)
+            for file in files:
+                dl = download_file(f"https://wspm.pages.dev/{packageName}/{file}")
+                saveFile(os.path.join(os.getcwd(), "packages", packageName), file, dl)
+            print("Installation success!")
+        except Exception as e:
+            print("Installation failed. " + str(e))
+    else:
+        print(f"Package {packageName} is already up to date.")
+    
+
+install(input("type a package\n"))
