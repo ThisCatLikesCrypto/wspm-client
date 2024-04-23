@@ -114,7 +114,7 @@ def deletePackage(packageName):
         pront(e)
 
 def remove(packageName):
-    if input("Are you sure you want to do this? (Y/N) ").lower() == "y":
+    if input(f"Are you sure you want to remove {packageName}? (Y/N) ").lower() == "y":
         deletePackage(packageName)
     else:
         pront("Abort")
