@@ -22,9 +22,12 @@ def saveFile(path, name, data):
             f.write(data)
 
 def readCurrentVersion(packageName):
-    with open(os.path.join(os.getcwd(), "packages", packageName, "metadata"), "r") as f:
-        data = f.read()
-        return json.loads(data)["version"]
+    try:
+        with open(os.path.join(os.getcwd(), "packages", packageName, "metadata"), "r") as f:
+            data = f.read()
+            return json.loads(data)["version"]
+    except FileNotFoundError:
+        return 0
 
 def download_file(url):
     print("Retrieving " + url)
@@ -35,13 +38,14 @@ def download_file(url):
         print("Failed to download file.")
 
 def getMetadata(name) -> list:
-    return json.loads(download_file("https://wspm.pages.dev/" + name + "/metadata"))
+    return json.loads(download_file(f"https://wspm.pages.dev/{name}/metadata"))
 
-def install(packageName):
-    print("Installing " + packageName)
-    metadata = getMetadata(packageName)
+def installp2(metadata, packageName):
     files = metadata['files'].split(",")
-    if metadata["version"] > readCurrentVersion(packageName):
+    oses = metadata['oses'].split(",")
+    if os.name not in oses and "universal" not in oses:
+        raise OSError("Unsupported os for this package.")
+    if float(metadata["version"]) > float(readCurrentVersion(packageName)):
         try:
             metaSave(os.path.join(os.getcwd(), "packages", packageName), metadata)
             for file in files:
@@ -49,9 +53,35 @@ def install(packageName):
                 saveFile(os.path.join(os.getcwd(), "packages", packageName), file, dl)
             print("Installation success!")
         except Exception as e:
-            print("Installation failed. " + str(e))
+            print("Installation failed.\n " + str(e))
     else:
-        print(f"Package {packageName} is already up to date.")
-    
+        print(f"Package {packageName} is already up to date")
 
-install(input("type a package\n"))
+def install(packageName):
+    print("Installing " + packageName)
+    try:
+        metadata = getMetadata(packageName)
+        installp2(metadata, packageName)
+    except Exception as e:
+        match e:
+            case json.decoder.JSONDecodeError:
+                print("Not found or some other JSON ded")
+                print("Abort")
+            case OSError:
+                print("Unsupported OS.")
+
+def remove(packageName):
+    print("Removing " + packageName)
+    try:
+        os.removedirs(os.path.join(os.getcwd(), "packages", packageName))
+    except Exception as e:
+        print("Failed")
+        print(e)
+    
+command = input("type a command\n")
+packageName = input("type a package\n")
+match command:
+    case "install":
+        install(packageName)
+    case "remove":
+        remove(packageName) 
