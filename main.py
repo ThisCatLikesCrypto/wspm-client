@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+import shutil
 
 def metaSave(path, data):
     data = str(data).replace("'", '"')
@@ -70,13 +71,21 @@ def install(packageName):
             case OSError:
                 print("Unsupported OS.")
 
-def remove(packageName):
+def deletePackage(packageName):
     print("Removing " + packageName)
     try:
-        os.removedirs(os.path.join(os.getcwd(), "packages", packageName))
+        shutil.rmtree(os.path.join(os.getcwd(), "packages", packageName))
+        print("Remove success!")
     except Exception as e:
         print("Failed")
         print(e)
+
+def remove(packageName):
+    if input("Are you sure you want to do this? (Y/N) ").lower() == "y":
+        deletePackage(packageName)
+    else:
+        print("Abort")
+
     
 command = input("type a command\n")
 packageName = input("type a package\n")
