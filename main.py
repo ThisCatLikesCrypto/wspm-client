@@ -157,20 +157,7 @@ def remove(packageName):
 
 
 def main():
-    #Checking for the list timestamp
-    if Path(packageListDir).is_file():
-        listUpdateTime = os.path.getmtime(packageListDir)
-        if time.time()-listUpdateTime >= 3600:
-            plainPackages = download_file(listURL)
-            packages = str(plainPackages).removeprefix("b").replace("'", "").split(", ")
-            saveFile(installdir, "package-list", plainPackages)
-        else:
-            with open(packageListDir, "r") as f:
-                packages = str(f.read()).removeprefix("b").replace("'", "").split(", ")
-    else:
-        plainPackages = download_file(listURL)
-        packages = str(plainPackages).removeprefix("b").replace("'", "").split(", ")
-        saveFile(installdir, "package-list", plainPackages)
+    packages = str(download_file(listURL)).removeprefix("b").replace("'", "").split(", ")
 
     command = input("Type a command\n")
     packageNames = input("Type a package/packages\n").split(" ")
