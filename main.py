@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import shutil
+import zipfile
 
 listURL = "https://wspm.pages.dev/package-list"
 baseURL = "https://wspm.pages.dev/packages/"
@@ -50,6 +51,19 @@ def download_file(url: str):
 def getMetadata(name: str) -> list:
     return json.loads(download_file(f"{baseURL}{name}/metadata"))
 
+def extract(packageName):
+    print("Extracting " + packageName)
+    path = os.path.join(os.getcwd(), "packages", packageName)
+    files = os.listdir(path)
+    for file in files:
+        if file.endswith('.zip'):
+            file_path = os.path.join(path, file)
+            with zipfile.ZipFile(file_path, 'r') as zip_ref:
+                zip_ref.extractall(path)
+                print("Extracted "+ file_path)
+                os.remove(file_path)
+
+
 def installp2(metadata, packageName):
     files = metadata['files'].split(", ")
     oses = metadata['oses'].split(", ")
@@ -60,6 +74,7 @@ def installp2(metadata, packageName):
         for file in files:
             dl = download_file(f"{baseURL}{packageName}/{file}")
             saveFile(os.path.join(os.getcwd(), "packages", packageName), file, dl)
+        extract(packageName)
         pront("Installation success!")
     except Exception as e:
         pront("Installation failed.\n " + str(e))
