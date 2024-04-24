@@ -3,6 +3,8 @@ import json
 import os
 import shutil
 import zipfile
+import time
+from pathlib import Path
 
 #Define variables
 listURL = "https://wspm.pages.dev/package-list"
@@ -22,6 +24,7 @@ else:
     os.mkdir(os.path.join(installdir, "packages"))
 
 packagedir = os.path.join(installdir, "packages")
+packageListDir = os.path.join(installdir, "package-list")
 
 def pront(stufftoprint):
     if __name__ == "__main__":
@@ -152,14 +155,32 @@ def remove(packageName):
     else:
         pront("Abort")
 
-    
-command = input("Type a command\n")
-packageNames = input("Type a package/packages\n").split(" ")
-match command:
-    case "install":
-        packages = str(download_file(listURL)).removeprefix("b").replace("'", "").split(", ")
-        for packageName in packageNames:
-            install(packageName, packages)
-    case "remove":
-        for packageName in packageNames:
-            remove(packageName)
+
+def main():
+    #Checking for the list timestamp
+    if Path(packageListDir).is_file():
+        listUpdateTime = os.path.getmtime(packageListDir)
+        if time.time()-listUpdateTime >= 3600:
+            plainPackages = download_file(listURL)
+            packages = str(plainPackages).removeprefix("b").replace("'", "").split(", ")
+            saveFile(installdir, "package-list", plainPackages)
+        else:
+            with open(packageListDir, "r") as f:
+                packages = str(f.read()).removeprefix("b").replace("'", "").split(", ")
+    else:
+        plainPackages = download_file(listURL)
+        packages = str(plainPackages).removeprefix("b").replace("'", "").split(", ")
+        saveFile(installdir, "package-list", plainPackages)
+
+    command = input("Type a command\n")
+    packageNames = input("Type a package/packages\n").split(" ")
+    match command:
+        case "install":
+            for packageName in packageNames:
+                install(packageName, packages)
+        case "remove":
+            for packageName in packageNames:
+                remove(packageName)
+
+if __name__ == "__main__":
+    main()
