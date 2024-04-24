@@ -14,14 +14,14 @@ if os.name == "nt":
 else:
     installdir = os.path.expanduser('~') + "/wspm"
 
-packagedir = os.path.join(installdir, "packages")
-
 #Check that the packages dir exists, if not create it and inform the user
-if os.path.isdir(packagedir):
+if os.path.isdir(os.path.join(installdir, "packages")):
     pass
 else:
-    print("No packagedir found. Making "+packagedir)
-    os.mkdir(packagedir)
+    print("No packagedir found. Making "+os.path.join(installdir, "packages"))
+    os.mkdir(os.path.join(installdir, "packages"))
+
+packagedir = os.path.join(installdir, "packages")
 
 def pront(stufftoprint):
     if __name__ == "__main__":
