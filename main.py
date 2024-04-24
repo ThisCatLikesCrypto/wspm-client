@@ -17,11 +17,11 @@ else:
 packagedir = os.path.join(installdir, "packages")
 
 #Check that the packages dir exists, if not create it and inform the user
-if os.path.isdir(os.path.join(packagedir)):
+if os.path.isdir(packagedir):
     pass
 else:
     print("No packagedir found. Making "+packagedir)
-    os.mkdir(os.path.join(packagedir))
+    os.mkdir(packagedir)
 
 def pront(stufftoprint):
     if __name__ == "__main__":
