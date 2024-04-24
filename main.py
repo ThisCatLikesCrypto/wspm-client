@@ -3,9 +3,25 @@ import json
 import os
 import shutil
 import zipfile
+from socket import gaierror
 
+#Define variables
 listURL = "https://wspm.pages.dev/package-list"
 baseURL = "https://wspm.pages.dev/packages/"
+
+if os.name == "nt":
+    installdir = os.getenv('LOCALAPPDATA') + "\\wspm"
+else:
+    installdir = os.path.expanduser('~') + "/wspm"
+
+packagedir = os.path.join(installdir, "packages")
+
+#Check that the packages dir exists, if not create it and inform the user
+if os.path.isdir(os.path.join(packagedir)):
+    pass
+else:
+    print("No packagedir found. Making "+packagedir)
+    os.mkdir(os.path.join(packagedir))
 
 def pront(stufftoprint):
     if __name__ == "__main__":
@@ -34,7 +50,7 @@ def saveFile(path, name, data):
 
 def readCurrentVersion(packageName: str) -> dict:
     try:
-        with open(os.path.join(os.getcwd(), "packages", packageName, "metadata"), "r") as f:
+        with open(os.path.join(packagedir, packageName, "metadata"), "r") as f:
             data = f.read()
             return json.loads(data)["version"]
     except FileNotFoundError:
@@ -42,7 +58,10 @@ def readCurrentVersion(packageName: str) -> dict:
 
 def download_file(url: str):
     pront("Retrieving " + url)
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+    except gaierror:
+        response.status_code == 404
     if response.status_code == 200:
         return response.content
     else:
@@ -53,7 +72,7 @@ def getMetadata(name: str) -> list:
 
 def extract(packageName):
     print("Extracting " + packageName)
-    path = os.path.join(os.getcwd(), "packages", packageName)
+    path = os.path.join(packagedir, packageName)
     files = os.listdir(path)
     for file in files:
         if file.endswith('.zip'):
@@ -70,10 +89,10 @@ def installp2(metadata, packageName):
     if os.name not in oses and "universal" not in oses:
         raise OSError("Unsupported os for this package.")
     try:
-        metaSave(os.path.join(os.getcwd(), "packages", packageName), metadata)
+        metaSave(os.path.join(packagedir, packageName), metadata)
         for file in files:
             dl = download_file(f"{baseURL}{packageName}/{file}")
-            saveFile(os.path.join(os.getcwd(), "packages", packageName), file, dl)
+            saveFile(os.path.join(packagedir, packageName), file, dl)
         extract(packageName)
         pront("Installation success!")
     except Exception as e:
@@ -86,7 +105,7 @@ def installDeps(deps):
     for dep in deps:
         pront("Downloading " + dep)
         metadata = getMetadata(dep)
-        if float(metadata["version"]) > float(readCurrentVersion(packageName)):
+        if float(metadata["version"]) > float(readCurrentVersion(dep)):
             installp2(metadata, dep)
         else:
             pront(f"Dependency {dep} is already up to date")
@@ -122,7 +141,7 @@ def install(packageName, packages):
 def deletePackage(packageName):
     pront("Removing " + packageName)
     try:
-        shutil.rmtree(os.path.join(os.getcwd(), "packages", packageName))
+        shutil.rmtree(os.path.join(packagedir, packageName))
         pront("Remove success!")
     except Exception as e:
         pront("Failed")
