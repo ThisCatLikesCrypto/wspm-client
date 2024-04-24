@@ -60,12 +60,12 @@ def download_file(url: str):
     pront("Retrieving " + url)
     try:
         response = requests.get(url)
+        if response.status_code == 200:
+            return response.content
+        else:
+            pront("Failed to download file.")
     except requests.exceptions.ConnectionError:
-        response.status_code == 404
-    if response.status_code == 200:
-        return response.content
-    else:
-        pront("Failed to download file.")
+        print("Failed to connect. Maybe check your internet connection?")
 
 def getMetadata(name: str) -> list:
     return json.loads(download_file(f"{baseURL}{name}/metadata"))
