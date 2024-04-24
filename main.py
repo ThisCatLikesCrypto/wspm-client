@@ -19,6 +19,7 @@ if os.path.isdir(os.path.join(installdir, "packages")):
     pass
 else:
     print("No packagedir found. Making "+os.path.join(installdir, "packages"))
+    os.mkdir(installdir)
     os.mkdir(os.path.join(installdir, "packages"))
 
 packagedir = os.path.join(installdir, "packages")
