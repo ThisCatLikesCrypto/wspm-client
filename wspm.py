@@ -17,7 +17,7 @@ BLUE = '\033[38;5;117m' #dark-aqua sort of colour
 if os.name == "nt":
     installdir = os.getenv('LOCALAPPDATA') + "\\wspm"
 else:
-    installdir = os.path.expanduser('~') + "/wspm"
+    installdir = os.path.expanduser('~') + "/.local/wspm"
 
 #Check that the packages dir exists, if not create it and inform the user
 if os.path.isdir(os.path.join(installdir, "packages")):
