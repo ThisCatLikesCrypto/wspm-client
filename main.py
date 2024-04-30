@@ -195,14 +195,21 @@ def main():
     plainPackageStr = checkCache(packageListDir)
     packages = str(plainPackageStr).removeprefix("b").replace("'", "").split(", ")
     command = input("Type a command\n")
-    packageNames = input("Type a package/packages\n").split(" ")
     match command:
         case "install":
+            packageNames = input("Type a package/packages\n").split(" ")
             for packageName in packageNames:
                 install(packageName, packages)
         case "remove":
+            packageNames = input("Type a package/packages\n").split(" ")
             for packageName in packageNames:
                 remove(packageName)
+        case "list":
+            pront("Listing...")
+            packageNames = os.listdir(packagedir)
+            pront("Done!", GREEN)
+            for hahaStrGoBrrr in packageNames:
+                pront(hahaStrGoBrrr)
 
 if __name__ == "__main__":
     main()
