@@ -15,7 +15,7 @@ RED = '\033[38;5;203m'
 BLUE = '\033[38;5;117m' #dark-aqua sort of colour
 
 if os.name == "nt":
-    installdir = os.getenv('LOCALAPPDATA') + "\\wspm"
+    installdir = os.getenv('USERPROFILE') + "\\wspm"
 else:
     installdir = os.path.expanduser('~') + "/.local/wspm"
 
@@ -99,7 +99,7 @@ def extract(packageName):
             with zipfile.ZipFile(file_path, 'r') as zip_ref:
                 zip_ref.extractall(path)
                 pront("Extracted "+ file_path, GREEN)
-                os.remove(file_path)
+            os.remove(file_path)
 
 
 def installp2(metadata, packageName):
