@@ -183,7 +183,11 @@ def checkCache(file_path, fileURL=listURL):
         # Check if the file has been updated in the last hour (3600 seconds)
         if time_difference > 3600:
             data = download_file(f"{fileURL}")
-            saveFile(file_path, data)
+            try:
+                saveFile(file_path, data)
+            except TypeError:
+                data = download_file(f"{fileURL}")
+                saveFile(file_path, data)
     else:
         data = download_file(f"{fileURL}")
         saveFile(file_path, data)
@@ -191,17 +195,29 @@ def checkCache(file_path, fileURL=listURL):
     with open(packageListDir, "rb") as f:
         return f.read()
 
+def processCMD():
+    try:
+        return sys.argv[1]
+    except IndexError:
+        return input("Type a command\n")
+
+def processPKG():
+    if sys.argv[2:] != []:
+        return sys.argv[2:]
+    else:
+        return input("Type a package/packages\n").split(" ")
+
+
 def main():
     plainPackageStr = checkCache(packageListDir)
     packages = str(plainPackageStr).removeprefix("b").replace("'", "").split(", ")
-    command = input("Type a command\n")
-    match command:
+    match processCMD():
         case "install":
-            packageNames = input("Type a package/packages\n").split(" ")
+            packageNames = processPKG()
             for packageName in packageNames:
                 install(packageName, packages)
         case "remove":
-            packageNames = input("Type a package/packages\n").split(" ")
+            packageNames = processPKG()
             for packageName in packageNames:
                 remove(packageName)
         case "list":
@@ -210,6 +226,8 @@ def main():
             pront("Done!", GREEN)
             for hahaStrGoBrrr in packageNames:
                 pront(hahaStrGoBrrr)
+        case _:
+            print("no command")
 
 if __name__ == "__main__":
     main()
