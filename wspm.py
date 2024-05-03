@@ -9,6 +9,7 @@ import time
 #Define variables
 listURL = "https://wspm.pages.dev/package-list"
 baseURL = "https://wspm.pages.dev/packages/"
+yestoall = False
 
 GREEN = '\033[38;5;120m'
 RED = '\033[38;5;203m'
@@ -29,6 +30,16 @@ else:
 
 packagedir = os.path.join(installdir, "packages")
 packageListDir = os.path.join(installdir, "package-list")
+
+def checka(inp):
+    global yestoall
+    if inp == "a":
+        yestoall = True
+        return True
+    elif inp == "y":
+        return True
+    else:
+        return False
 
 def producesyntaxed(text, color='\033[38;5;120m'):
     try:
@@ -84,7 +95,7 @@ def download_file(url: str):
             pront("Failed to download file.", RED)
     except requests.exceptions.ConnectionError:
         print("Failed to connect. Maybe check your internet connection?")
-        return None
+        sys.exit()
 
 def getMetadata(name: str) -> list:
     return json.loads(download_file(f"{baseURL}{name}/metadata"))
@@ -166,29 +177,37 @@ def deletePackage(packageName):
         pront(e, RED)
 
 def remove(packageName):
-    if input(f"Are you sure you want to remove {packageName}? (Y/N) ").lower() == "y":
+    if yestoall:
         deletePackage(packageName)
     else:
-        pront("Abort", RED)
+        selection = checka(input(f"Are you sure you want to remove {packageName}? ((y)es/(n)o)/(a)ll): ").lower())
+        if selection:
+            deletePackage(packageName)
+        else:
+            pront("Abort", RED)
 
 
 def checkCache(file_path, fileURL=listURL):
-    if os.path.exists(file_path):
-        # Get the last modification time of the file
-        last_modified = os.path.getmtime(file_path)
-        # Get the current time
-        current_time = time.time()
-        # Calculate the difference in seconds
-        time_difference = current_time - last_modified
-        # Check if the file has been updated in the last hour (3600 seconds)
-        if time_difference > 3600:
-            data = download_file(f"{fileURL}")
-            try:
-                saveFile(file_path, data)
-            except TypeError:
+    try:
+        if os.path.exists(file_path):
+            # Get the last modification time of the file
+            last_modified = os.path.getmtime(file_path)
+            # Get the current time
+            current_time = time.time()
+            # Calculate the difference in seconds
+            time_difference = current_time - last_modified
+            # Check if the file has been updated in the last hour (3600 seconds)
+            if not time_difference < 3600:
                 data = download_file(f"{fileURL}")
-                saveFile(file_path, data)
-    else:
+                try:
+                    saveFile(file_path, data)
+                except TypeError:
+                    data = download_file(f"{fileURL}")
+                    saveFile(file_path, data)
+        else:
+            data = download_file(f"{fileURL}")
+            saveFile(file_path, data)
+    except:
         data = download_file(f"{fileURL}")
         saveFile(file_path, data)
     
@@ -207,17 +226,14 @@ def processPKG():
     else:
         return input("Type a package/packages\n").split(" ")
 
-
-def main():
-    plainPackageStr = checkCache(packageListDir)
-    packages = str(plainPackageStr).removeprefix("b").replace("'", "").split(", ")
-    match processCMD():
+def cmdselector(packages: str, pkgdone, cmd):
+    match cmd:
         case "install":
-            packageNames = processPKG()
+            packageNames = pkgdone
             for packageName in packageNames:
                 install(packageName, packages)
         case "remove":
-            packageNames = processPKG()
+            packageNames = pkgdone
             for packageName in packageNames:
                 remove(packageName)
         case "list":
@@ -228,6 +244,22 @@ def main():
                 pront(hahaStrGoBrrr)
         case _:
             print("no command")
+
+def test():
+    cmdselector(packages, ["allwords"], "install")
+    cmdselector(packages, ["allwords", "test_dependency"], "remove")
+
+def main():
+    cmd = processCMD()
+    if cmd == "test":
+        test()
+    else:
+        pkgdone = processPKG()
+        cmdselector(packages, pkgdone, cmd)
+    
+
+plainPackageStr = checkCache(packageListDir)
+packages = str(plainPackageStr).removeprefix("b").replace("'", "").split(", ")
 
 if __name__ == "__main__":
     main()
