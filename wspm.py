@@ -167,6 +167,22 @@ def install(packageName, packages):
     else:
         pront(f"Package {packageName} does not exist", RED)
 
+def update(packageName):
+    pront("Downloading " + packageName)
+    try:
+        metadata = getMetadata(packageName)
+        if not float(metadata["version"]) > float(readCurrentVersion(packageName)):
+            pront(f"Package {packageName} is already up to date.", GREEN)
+        else:
+            installp2(metadata, packageName)
+    except Exception as e:
+         match e:
+            case json.decoder.JSONDecodeError:
+                pront("Not found or some other JSON ded", RED)
+                pront("Abort", RED)
+            case _:
+                pront(e, RED)
+
 def deletePackage(packageName):
     pront("Removing " + packageName)
     try:
@@ -190,13 +206,9 @@ def remove(packageName):
 def checkCache(file_path, fileURL=listURL):
     try:
         if os.path.exists(file_path):
-            # Get the last modification time of the file
             last_modified = os.path.getmtime(file_path)
-            # Get the current time
             current_time = time.time()
-            # Calculate the difference in seconds
             time_difference = current_time - last_modified
-            # Check if the file has been updated in the last hour (3600 seconds)
             if not time_difference < 3600:
                 data = download_file(f"{fileURL}")
                 try:
@@ -226,14 +238,14 @@ def processPKG():
     else:
         return input("Type a package/packages\n").split(" ")
 
-def cmdselector(packages: str, pkgdone, cmd):
+def cmdselector(packages: str, cmd):
     match cmd:
         case "install":
-            packageNames = pkgdone
+            packageNames = processPKG()
             for packageName in packageNames:
                 install(packageName, packages)
         case "remove":
-            packageNames = pkgdone
+            packageNames = processPKG()
             for packageName in packageNames:
                 remove(packageName)
         case "list":
@@ -242,6 +254,10 @@ def cmdselector(packages: str, pkgdone, cmd):
             pront("Done!", GREEN)
             for hahaStrGoBrrr in packageNames:
                 pront(hahaStrGoBrrr)
+        case "update":
+            packageNames = os.listdir(packagedir)
+            for packageName in packageNames:
+                update(packageName)
         case _:
             print("no command")
 
@@ -254,8 +270,7 @@ def main():
     if cmd == "test":
         test()
     else:
-        pkgdone = processPKG()
-        cmdselector(packages, pkgdone, cmd)
+        cmdselector(packages, cmd)
     
 
 plainPackageStr = checkCache(packageListDir)
