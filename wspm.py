@@ -258,19 +258,17 @@ def cmdselector(packages: str, cmd):
             packageNames = os.listdir(packagedir)
             for packageName in packageNames:
                 update(packageName)
+        case "test":
+            install("allwords", packages)
+            remove("allwords")
+            remove("test_dependency")
         case _:
             print("no command")
 
-def test():
-    cmdselector(packages, ["allwords"], "install")
-    cmdselector(packages, ["allwords", "test_dependency"], "remove")
 
 def main():
     cmd = processCMD()
-    if cmd == "test":
-        test()
-    else:
-        cmdselector(packages, cmd)
+    cmdselector(packages, cmd)
     
 
 plainPackageStr = checkCache(packageListDir)
