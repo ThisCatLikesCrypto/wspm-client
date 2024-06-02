@@ -5,15 +5,19 @@ import sys
 import shutil
 import zipfile
 import time
+import subprocess
 
 #Define variables
 listURL = "https://wspm.pages.dev/package-list"
 baseURL = "https://wspm.pages.dev/packages/"
+backupBaseURL = "https://wspm.pages.dev/packages/"
 yestoall = False
 
 GREEN = '\033[38;5;120m'
 RED = '\033[38;5;203m'
 BLUE = '\033[38;5;117m' #dark-aqua sort of colour
+
+usebackup = False
 
 if os.name == "nt":
     installdir = os.getenv('USERPROFILE') + "\\wspm"
@@ -94,7 +98,14 @@ def download_file(url: str):
         else:
             pront("Failed to download file.", RED)
     except requests.exceptions.ConnectionError:
-        print("Failed to connect. Maybe check your internet connection?")
+        global usebackup
+        if usebackup == 0:
+            try:
+                usebackup = 1
+                download_file(backupBaseURL)
+            except requests.exceptions.ConnectionError:
+                pass
+        pront("Failed to connect. Maybe check your internet connection?", RED)
         sys.exit()
 
 def getMetadata(name: str) -> list:
@@ -165,7 +176,13 @@ def install(packageName, packages):
                 case _:
                     pront(e, RED)
     else:
-        pront(f"Package {packageName} does not exist", RED)
+        pront("Package not found in wspm repositories.", RED)
+        if os.name == "nt":
+            if input("Do you want to use winget? y/n ").lower() == "y":
+                pront("Using winget", BLUE)
+                os.system("winget install " + packageName)
+            elif input("Do you want to use chocolatey (requires admin)? y/n ").lower() == "y":
+                subprocess.call("python3 handlers/chocohandler.py " + packageName)
 
 def update(packageName):
     pront("Downloading " + packageName)
