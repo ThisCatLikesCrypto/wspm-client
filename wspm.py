@@ -6,6 +6,7 @@ import shutil
 import zipfile
 import time
 import subprocess
+import platform
 
 #Define variables
 listURL = "https://wspm.pages.dev/package-list"
@@ -183,6 +184,12 @@ def install(packageName, packages):
                 os.system("winget install " + packageName)
             elif input("Do you want to use chocolatey (requires admin)? y/n ").lower() == "y":
                 subprocess.call("python3 handlers/chocohandler.py " + packageName)
+        if platform.platform().startswith('Linux'):
+            import distro
+            if distro.name().startswith("Deb"):
+                if input("Do you want to use apt? y/n ").lower() == "y":
+                    pront("Using apt", BLUE)
+                    os.system("sudo apt-get install " + packageName)
 
 def update(packageName):
     pront("Downloading " + packageName)
