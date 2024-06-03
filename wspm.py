@@ -184,12 +184,17 @@ def install(packageName, packages):
                 os.system("winget install " + packageName)
             elif input("Do you want to use chocolatey (requires admin)? y/n ").lower() == "y":
                 subprocess.call("python3 handlers/chocohandler.py " + packageName)
-        if platform.platform().startswith('Linux'):
+        elif platform.uname().system.startswith('Linux'):
             import distro
-            if distro.name().startswith("Deb"):
+            distname = distro.name()
+            if distname.startswith("Deb") or "untu" in distname or "mint" in distname:
                 if input("Do you want to use apt? y/n ").lower() == "y":
                     pront("Using apt", BLUE)
                     os.system("sudo apt-get install " + packageName)
+        elif platform.uname().system == "Darwin":
+            if input("Do you want to use homebrew? y/n ").lower() == "y":
+                pront("Using brew")
+                os.system("brew install "+ packageName)
 
 def update(packageName):
     pront("Downloading " + packageName)
