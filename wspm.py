@@ -6,6 +6,8 @@ import shutil
 import zipfile
 import time
 import platform
+import semver
+import re
 from handlers.userinteraction import *
 
 #Define variables
@@ -64,6 +66,25 @@ def saveFile(path, data, name=None):
         with open(directory, 'wb') as f:
             f.write(data)
 
+def convertToSemver(non_semver_str):
+    # Default semver parts
+    major, minor, patch = 0, 0, 0
+    
+    # Extract numbers from the non-semver string
+    numbers = re.findall(r'\d+', non_semver_str)
+    
+    if len(numbers) > 0:
+        major = int(numbers[0])
+    if len(numbers) > 1:
+        minor = int(numbers[1])
+    if len(numbers) > 2:
+        patch = int(numbers[2])
+    
+    # Construct the semver string
+    semver_str = f"{major}.{minor}.{patch}"
+    
+    return semver_str
+
 def readCurrentVersion(packageName: str) -> dict:
     try:
         with open(os.path.join(packagedir, packageName, "metadata"), "r") as f:
@@ -71,6 +92,13 @@ def readCurrentVersion(packageName: str) -> dict:
             return json.loads(data)["version"]
     except FileNotFoundError:
         return 0
+
+def hasNewerVer(packageName, metadata):
+    installedver = convertToSemver(readCurrentVersion(packageName))
+    if semver.compare(installedver, convertToSemver(metadata['version'])) == -1:
+        return True
+    else:
+        return False
 
 def download_file(url: str):
     pront("Retrieving " + url)
@@ -111,7 +139,7 @@ def installp2(metadata, packageName):
     files = metadata['files'].split(", ")
     oses = metadata['oses'].split(", ")
     if os.name not in oses and "universal" not in oses:
-        raise OSError("Unsupported os for this package.")
+        raise OSError("Unsupported OS for this package.")
     try:
         metaSave(os.path.join(packagedir, packageName), metadata)
         for file in files:
@@ -128,7 +156,7 @@ def installDeps(deps):
     for dep in deps:
         pront("Downloading " + dep)
         metadata = getMetadata(dep)
-        if float(metadata["version"]) > float(readCurrentVersion(dep)):
+        if hasNewerVer(dep, metadata):
             installp2(metadata, dep)
         else:
             pront(f"Dependency {dep} is already up to date", GREEN)
@@ -139,7 +167,7 @@ def install(packageName, packages):
         try:
             metadata = getMetadata(packageName)
             deps = metadata['dependencies']
-            if not float(metadata["version"]) > float(readCurrentVersion(packageName)):
+            if not hasNewerVer(packageName, metadata):
                 pront(f"Package {packageName} is already up to date.", GREEN)
                 if deps !="":
                     depUpdate = input("However, dependencies were found. Do you want to update dependencies? (Y/N): ").lower()
@@ -175,7 +203,7 @@ def update(packageName):
     pront("Downloading " + packageName)
     try:
         metadata = getMetadata(packageName)
-        if not float(metadata["version"]) > float(readCurrentVersion(packageName)):
+        if not hasNewerVer(packageName, metadata):
             pront(f"Package {packageName} is already up to date.", GREEN)
         else:
             installp2(metadata, packageName)

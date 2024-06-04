@@ -7,7 +7,6 @@ def submit():
 # Create the main window
 frame = tk.Tk()
 frame.title("wspm create metadata")
-frame.geometry('400x200')
 
 # Create labels and textboxes using grid
 labels = ["Name:", "Files:", "Version:", "OSes:", "Dependencies:"]
