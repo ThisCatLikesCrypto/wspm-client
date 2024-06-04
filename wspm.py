@@ -5,19 +5,14 @@ import sys
 import shutil
 import zipfile
 import time
-import subprocess
 import platform
+from handlers.userinteraction import *
 
 #Define variables
 listURL = "https://wspm.pages.dev/package-list"
 baseURL = "https://wspm.pages.dev/packages/"
 backupBaseURL = "https://wspm.pages.dev/packages/"
 yestoall = False
-
-GREEN = '\033[38;5;120m'
-RED = '\033[38;5;203m'
-BLUE = '\033[38;5;117m' #dark-aqua sort of colour
-
 usebackup = False
 
 if os.name == "nt":
@@ -45,19 +40,6 @@ def checka(inp):
         return True
     else:
         return False
-
-def producesyntaxed(text, color='\033[38;5;120m'):
-    try:
-        sys.stdout.write(color + text + '\033[0m')
-    except:
-        print(text)
-
-def pront(stufftoprint, colour=BLUE):
-    stufftoprint = str(stufftoprint) + "\n"
-    if __name__ == "__main__":
-        producesyntaxed(stufftoprint, colour)
-    else:
-        producesyntaxed(f"{__name__}: {stufftoprint}", BLUE)
 
 def metaSave(path, data):
     data = str(data).replace("'", '"')
@@ -101,8 +83,8 @@ def download_file(url: str):
     except requests.exceptions.ConnectionError:
         global usebackup
         if usebackup == 0:
+            usebackup = 1
             try:
-                usebackup = 1
                 download_file(backupBaseURL)
             except requests.exceptions.ConnectionError:
                 pass
@@ -179,18 +161,11 @@ def install(packageName, packages):
     else:
         pront("Package not found in wspm repositories.", RED)
         if os.name == "nt":
-            if input("Do you want to use winget? y/n ").lower() == "y":
-                pront("Using winget", BLUE)
-                os.system("winget install " + packageName)
-            elif input("Do you want to use chocolatey (requires admin)? y/n ").lower() == "y":
-                subprocess.call("python3 handlers/chocohandler.py " + packageName)
-        elif platform.uname().system.startswith('Linux'):
-            import distro
-            distname = distro.name()
-            if distname.startswith("Deb") or "untu" in distname or "mint" in distname:
-                if input("Do you want to use apt? y/n ").lower() == "y":
-                    pront("Using apt", BLUE)
-                    os.system("sudo apt-get install " + packageName)
+            from handlers import windowspkgs
+            windowspkgs.install(packageName)
+        elif platform.uname().system == 'Linux':
+            from handlers import linuxpkgs
+            linuxpkgs.install(packageName)
         elif platform.uname().system == "Darwin":
             if input("Do you want to use homebrew? y/n ").lower() == "y":
                 pront("Using brew")
@@ -222,14 +197,23 @@ def deletePackage(packageName):
         pront(e, RED)
 
 def remove(packageName):
-    if yestoall:
-        deletePackage(packageName)
-    else:
-        selection = checka(input(f"Are you sure you want to remove {packageName}? ((y)es/(n)o)/(a)ll): ").lower())
-        if selection:
+    if packageName in os.listdir(packagedir):
+        if yestoall:
             deletePackage(packageName)
         else:
-            pront("Abort", RED)
+            selection = checka(input(f"Are you sure you want to remove {packageName}? ((y)es/(n)o)/(a)ll): ").lower())
+            if selection:
+                deletePackage(packageName)
+            else:
+                pront("Abort", RED)
+    else:
+        if os.name == "nt":
+            print("not implemented")
+        elif platform.uname().system == 'Linux':
+            from handlers import linuxpkgs
+            linuxpkgs.remove(packageName)
+        elif platform.uname().system == "Darwin":
+            print("homebrew remove not implemented")
 
 
 def checkCache(file_path, fileURL=listURL):
