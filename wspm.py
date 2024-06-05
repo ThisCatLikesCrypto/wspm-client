@@ -69,9 +69,9 @@ def saveFile(path, data, name=None):
 def convertToSemver(non_semver_str):
     # Default semver parts
     major, minor, patch = 0, 0, 0
-    
+
     # Extract numbers from the non-semver string
-    numbers = re.findall(r'\d+', non_semver_str)
+    numbers = re.findall(r'\d+', str(non_semver_str))
     
     if len(numbers) > 0:
         major = int(numbers[0])
@@ -95,7 +95,7 @@ def readCurrentVersion(packageName: str) -> dict:
 
 def hasNewerVer(packageName, metadata):
     installedver = convertToSemver(readCurrentVersion(packageName))
-    if semver.compare(installedver, convertToSemver(metadata['version'])) == -1:
+    if semver.compare(str(installedver), str(convertToSemver(metadata['version']))) == -1:
         return True
     else:
         return False
@@ -120,7 +120,8 @@ def download_file(url: str):
         sys.exit()
 
 def getMetadata(name: str) -> list:
-    return json.loads(download_file(f"{baseURL}{name}/metadata"))
+    rawdl = download_file(f"{baseURL}{name}/metadata")
+    return json.loads(rawdl)
 
 def extract(packageName):
     pront("Extracting " + packageName, BLUE)
