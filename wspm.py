@@ -237,7 +237,8 @@ def remove(packageName):
                 pront("Abort", RED)
     else:
         if os.name == "nt":
-            print("not implemented")
+            from handlers import windowspkgs
+            windowspkgs.remove(packageName)
         elif platform.uname().system == 'Linux':
             from handlers import linuxpkgs
             linuxpkgs.remove(packageName)
