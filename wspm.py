@@ -281,6 +281,14 @@ def processPKG():
     else:
         return input("Type a package/packages\n").split(" ")
 
+def wspmhelp():
+    pront("Welcome to wspm help.")
+    pront("List of commands:")
+    pront("    install: syntax 'wspm install <package/packages>' desc: installs specified packages", GREEN)
+    pront("    remove: syntax 'wspm remove <package/packages>' desc: removes specified packages", GREEN)
+    pront("    update: syntax 'wspm update' desc: updates all packages", GREEN)
+    pront("    test: syntax 'wspm test' desc: installs and uninstalls allwords and test_dependency", GREEN)
+
 def cmdselector(packages: str, cmd):
     match cmd:
         case "install":
@@ -305,6 +313,8 @@ def cmdselector(packages: str, cmd):
             install("allwords", packages)
             remove("allwords")
             remove("test_dependency")
+        case "help":
+            wspmhelp()
         case _:
             print("no command")
 
