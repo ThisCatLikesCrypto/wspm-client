@@ -16,6 +16,7 @@ baseURL = "https://wspm.pages.dev/packages/"
 backupBaseURL = "https://wspm.pages.dev/packages/"
 yestoall = False
 usebackup = False
+wspmcwd = os.getcwd()
 
 if os.name == "nt":
     installdir = os.getenv('USERPROFILE') + "\\wspm"
@@ -41,6 +42,13 @@ def checka(inp):
     elif inp == "y":
         return True
     else:
+        return False
+
+def indexExists(dictionary: dict, argument: str):
+    try:
+        dictionary[argument]
+        return True
+    except:
         return False
 
 def metaSave(path, data):
@@ -150,6 +158,14 @@ def installp2(metadata, packageName):
     except Exception as e:
         pront("Installation failed.\n " + str(e), RED)
 
+def installp3(metadata, packageName):
+    if indexExists(metadata, 'installscript'):
+        pront("Running program's install.py...")
+        os.chdir(os.path.join(packagedir, packageName))
+        os.system("install.py")
+        os.chdir(wspmcwd)
+    pront(f"Installation of package {packageName} success!", GREEN)
+
 def installDeps(deps):
     pront("Found dependencies!", GREEN)
     pront(f"Dependencies: {deps}", BLUE)
@@ -159,6 +175,7 @@ def installDeps(deps):
         metadata = getMetadata(dep)
         if hasNewerVer(dep, metadata):
             installp2(metadata, dep)
+            installp3(metadata, dep)
         else:
             pront(f"Dependency {dep} is already up to date", GREEN)
 
@@ -177,9 +194,10 @@ def install(packageName, packages):
             elif deps != "":
                 installDeps(deps)
                 installp2(metadata, packageName)
+                installp3(metadata, packageName)
             else:
                 installp2(metadata, packageName)
-            pront(f"Installation of package {packageName} success!", GREEN)
+                installp3(metadata, packageName)
         except Exception as e:
             match e:
                 case json.decoder.JSONDecodeError:
@@ -192,7 +210,7 @@ def install(packageName, packages):
         if os.name == "nt":
             from handlers import windowspkgs
             windowspkgs.install(packageName)
-        elif platform.uname().system == 'Linux':
+        elif platform.uname().system == "Linux":
             from handlers import linuxpkgs
             linuxpkgs.install(packageName)
         elif platform.uname().system == "Darwin":
