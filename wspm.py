@@ -12,16 +12,17 @@ from handlers.userinteraction import *
 
 #Define variables
 listURL = "https://wspm.pages.dev/package-list"
-baseURL = "https://wspm.pages.dev/packages/"
+backupListURL = "https://cdn.jsdelivr.net/gh/ThisCatLikesCrypto/wspm@main/package-list"
+baseURL = "https://cdn.jsdelivr.net/gh/ThisCatLikesCrypto/wspm@main/packages/"
 backupBaseURL = "https://wspm.pages.dev/packages/"
 yestoall = False
 usebackup = False
 wspmcwd = os.getcwd()
 
 if os.name == "nt":
-    installdir = os.getenv('USERPROFILE') + "\\wspm"
+    installdir = os.getenv('USERPROFILE') + "\\.wspm"
 else:
-    installdir = os.path.expanduser('~') + "/wspm"
+    installdir = os.path.expanduser('~') + "/.wspm"
 
 #Check that the packages dir exists, if not create it and inform the user
 if os.path.isdir(os.path.join(installdir, "packages")):
@@ -108,7 +109,7 @@ def hasNewerVer(packageName, metadata):
     else:
         return False
 
-def download_file(url: str):
+def download_file(url: str, backupType="base"):
     pront("Retrieving " + url)
     try:
         response = requests.get(url)
@@ -118,10 +119,16 @@ def download_file(url: str):
             pront("Failed to download file.", RED)
     except requests.exceptions.ConnectionError:
         global usebackup
-        if usebackup == 0:
+        if usebackup == 0 and backupType == "base":
             usebackup = 1
             try:
                 download_file(backupBaseURL)
+            except requests.exceptions.ConnectionError:
+                pass
+        elif usebackup == 0 and backupType == "list":
+            usebackup = 1
+            try:
+                download_file(backupListURL)
             except requests.exceptions.ConnectionError:
                 pass
         pront("Failed to connect. Maybe check your internet connection?", RED)
@@ -302,10 +309,14 @@ def processPKG():
 def wspmhelp():
     pront("Welcome to wspm help.")
     pront("List of commands:")
-    pront("    install: syntax 'wspm install <package/packages>' desc: installs specified packages", GREEN)
-    pront("    remove: syntax 'wspm remove <package/packages>' desc: removes specified packages", GREEN)
-    pront("    update: syntax 'wspm update' desc: updates all packages", GREEN)
-    pront("    test: syntax 'wspm test' desc: installs and uninstalls allwords and test_dependency", GREEN)
+    pront("    install:", GREEN)
+    pront("        syntax: 'wspm install <package/packages>'\n        desc: installs specified packages", BLUE2)
+    pront("    remove:", GREEN)
+    pront("        syntax: 'wspm remove <package/packages>'\n        desc: removes specified packages", BLUE2)
+    pront("    update:", GREEN)
+    pront("        syntax 'wspm update'\n        desc: updates all packages", BLUE2)
+    pront("    test:", GREEN)
+    pront("        syntax 'wspm test'\n        desc: installs and uninstalls allwords and test_dependency", BLUE2)
 
 def cmdselector(packages: str, cmd):
     match cmd:
