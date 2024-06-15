@@ -13,8 +13,8 @@ from handlers.userinteraction import *
 #Define variables
 listURL = "https://wspm.pages.dev/package-list"
 backupListURL = "https://cdn.jsdelivr.net/gh/ThisCatLikesCrypto/wspm@main/package-list"
-baseURL = "https://cdn.jsdelivr.net/gh/ThisCatLikesCrypto/wspm@main/packages/"
-backupBaseURL = "https://wspm.pages.dev/packages/"
+baseURL = "https://wspm.pages.dev/packages/"
+backupBaseURL = "https://cdn.jsdelivr.net/gh/ThisCatLikesCrypto/wspm@main/packages/"
 yestoall = False
 usebackup = False
 wspmcwd = os.getcwd()
