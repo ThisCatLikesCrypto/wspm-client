@@ -13,8 +13,8 @@ from handlers.userinteraction import *
 #Define variables
 listURL = "https://wspm.pages.dev/package-list"
 backupListURL = "https://cdn.jsdelivr.net/gh/ThisCatLikesCrypto/wspm@main/package-list"
-baseURL = "https://wspm.pages.dev/packages/"
-backupBaseURL = "https://cdn.jsdelivr.net/gh/ThisCatLikesCrypto/wspm@main/packages/"
+baseURL = "https://cdn.jsdelivr.net/gh/ThisCatLikesCrypto/wspm@main/packages/"
+backupBaseURL = "https://wspm.pages.dev/packages/"
 yestoall = False
 usebackup = False
 wspmcwd = os.getcwd()
@@ -173,33 +173,39 @@ def installp3(metadata, packageName):
         os.chdir(wspmcwd)
     pront(f"Installation of package {packageName} success!", GREEN)
 
-def installDeps(deps):
-    pront("Found dependencies!", GREEN)
+def installDeps(deps, packages, dependentPackage): 
+    pront("Found dependencies", GREEN)
     pront(f"Dependencies: {deps}", BLUE)
     deps = deps.split(", ")
     for dep in deps:
-        pront("Downloading " + dep)
         metadata = getMetadata(dep)
-        if hasNewerVer(dep, metadata):
+        if dependentPackage in metadata["dependencies"]:
+            pront(f"Circular dependency: {dependentPackage} is a dependency of {dep}", RED)
+            pront(f"Attempting to go directly to installp2. This means {dep} will be installed without ANY dependencies, except {dependentPackage}", YELLOW)
             installp2(metadata, dep)
             installp3(metadata, dep)
-        else:
-            pront(f"Dependency {dep} is already up to date", GREEN)
+        else: 
+            install(dep, packages, metadata)
 
-def install(packageName, packages):
-    if packageName in packages:
+def install(packageName: str, packages, metadata=None):
+    if packageName.startswith("-"):
+        pass
+    elif packageName in packages:
         pront("Downloading " + packageName)
         try:
-            metadata = getMetadata(packageName)
+            if metadata is None:
+                metadata = getMetadata(packageName)
+            else:
+                pass
             deps = metadata['dependencies']
             if not hasNewerVer(packageName, metadata):
                 pront(f"Package {packageName} is already up to date.", GREEN)
                 if deps !="":
                     depUpdate = input("However, dependencies were found. Do you want to update dependencies? (Y/N): ").lower()
                     if depUpdate == "y":
-                        installDeps(deps)
+                        installDeps(deps, packages, packageName)
             elif deps != "":
-                installDeps(deps)
+                installDeps(deps, packages, packageName)
                 installp2(metadata, packageName)
                 installp3(metadata, packageName)
             else:
@@ -213,7 +219,7 @@ def install(packageName, packages):
                 case _:
                     pront(e, RED)
     else:
-        pront("Package not found in wspm repositories.", RED)
+        pront(f"Package {packageName} not found in wspm repositories.", RED)
         if os.name == "nt":
             from handlers import windowspkgs
             windowspkgs.install(packageName)
@@ -271,13 +277,13 @@ def remove(packageName):
             print("homebrew remove not implemented")
 
 
-def checkCache(file_path, fileURL=listURL):
+def checkCache(file_path, fileURL=listURL, force=False):
     try:
         if os.path.exists(file_path):
             last_modified = os.path.getmtime(file_path)
             current_time = time.time()
             time_difference = current_time - last_modified
-            if not time_difference < 3600:
+            if not time_difference < 3600 or force:
                 data = download_file(f"{fileURL}")
                 try:
                     saveFile(file_path, data)
@@ -352,8 +358,10 @@ def main():
     cmd = processCMD()
     cmdselector(packages, cmd)
     
-
-plainPackageStr = checkCache(packageListDir)
+if "--force-pkglist-upd" in sys.argv:
+    plainPackageStr = checkCache(packageListDir, listURL, True)
+else:
+    plainPackageStr = checkCache(packageListDir)
 packages = str(plainPackageStr).removeprefix("b").replace("'", "").split(", ")
 
 if __name__ == "__main__":
