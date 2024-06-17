@@ -169,7 +169,7 @@ def installp3(metadata, packageName):
     if indexExists(metadata, 'installscript'):
         pront("Running program's install.py...")
         os.chdir(os.path.join(packagedir, packageName))
-        os.system("install.py")
+        os.system("python3 install.py")
         os.chdir(wspmcwd)
     pront(f"Installation of package {packageName} success!", GREEN)
 
