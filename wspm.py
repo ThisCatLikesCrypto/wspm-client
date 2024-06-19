@@ -179,13 +179,16 @@ def installDeps(deps, packages, dependentPackage):
     deps = deps.split(", ")
     for dep in deps:
         metadata = getMetadata(dep)
-        if dependentPackage in metadata["dependencies"]:
-            pront(f"Circular dependency: {dependentPackage} is a dependency of {dep}", RED)
-            pront(f"Attempting to go directly to installp2. This means {dep} will be installed without ANY dependencies, except {dependentPackage}", YELLOW)
-            installp2(metadata, dep)
-            installp3(metadata, dep)
-        else: 
-            install(dep, packages, metadata)
+        if hasNewerVer(dep, metadata):
+            if dependentPackage in metadata["dependencies"]:
+                pront(f"Circular dependency: {dependentPackage} is a dependency of {dep}", RED)
+                pront(f"Attempting to go directly to installp2. This means {dep} will be installed without ANY dependencies, except {dependentPackage}", YELLOW)
+                installp2(metadata, dep)
+                installp3(metadata, dep)
+            else: 
+                install(dep, packages, metadata)
+        else:
+            pront(f"Dependency {dep} is already up to date.", GREEN)
 
 def install(packageName: str, packages, metadata=None):
     if packageName.startswith("-"):
