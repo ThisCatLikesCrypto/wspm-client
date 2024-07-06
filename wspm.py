@@ -1,3 +1,5 @@
+#!TODO: Add backup secondary and ability to recognise when package was installed as a dependency, plus which source it was installed from
+
 import requests
 import json
 import os
@@ -12,8 +14,10 @@ from handlers.userinteraction import *
 
 #Define variables
 listURL = "https://wspm.pages.dev/package-list"
+secondaryListURL = "https://thiscatlikescrypto.github.io/wspm2/package-list"
 backupListURL = "https://cdn.jsdelivr.net/gh/ThisCatLikesCrypto/wspm@main/package-list"
 baseURL = "https://cdn.jsdelivr.net/gh/ThisCatLikesCrypto/wspm@main/packages/"
+secondaryBaseURL = "https://thiscatlikescrypto.github.io/wspm2/packages/"
 backupBaseURL = "https://wspm.pages.dev/packages/"
 yestoall = False
 usebackup = False
@@ -34,6 +38,7 @@ else:
 
 packagedir = os.path.join(installdir, "packages")
 packageListDir = os.path.join(installdir, "package-list")
+packageListDir2 = os.path.join(installdir, "secondary-list")
 
 def checka(inp):
     global yestoall
@@ -134,7 +139,7 @@ def download_file(url: str, backupType="base"):
         pront("Failed to connect. Maybe check your internet connection?", RED)
         sys.exit()
 
-def getMetadata(name: str) -> list:
+def getMetadata(name: str, baseURL=baseURL) -> list:
     rawdl = download_file(f"{baseURL}{name}/metadata")
     return json.loads(rawdl)
 
@@ -151,7 +156,7 @@ def extract(packageName):
             os.remove(file_path)
 
 
-def installp2(metadata, packageName):
+def installp2(metadata, packageName, baseURL):
     files = metadata['files'].split(", ")
     oses = metadata['oses'].split(", ")
     if os.name not in oses and "universal" not in oses:
@@ -173,7 +178,7 @@ def installp3(metadata, packageName):
         os.chdir(wspmcwd)
     pront(f"Installation of package {packageName} success!", GREEN)
 
-def installDeps(deps, packages, dependentPackage): 
+def installDeps(deps, packages, dependentPackage, baseURL): 
     pront("Found dependencies", GREEN)
     pront(f"Dependencies: {deps}", BLUE)
     deps = deps.split(", ")
@@ -183,44 +188,53 @@ def installDeps(deps, packages, dependentPackage):
             if dependentPackage in metadata["dependencies"]:
                 pront(f"Circular dependency: {dependentPackage} is a dependency of {dep}", RED)
                 pront(f"Attempting to go directly to installp2. This means {dep} will be installed without ANY dependencies, except {dependentPackage}", YELLOW)
-                installp2(metadata, dep)
+                installp2(metadata, dep, baseURL)
                 installp3(metadata, dep)
             else: 
-                install(dep, packages, metadata)
+                install(dep, packages, metadata, baseURL)
         else:
             pront(f"Dependency {dep} is already up to date.", GREEN)
 
-def install(packageName: str, packages, metadata=None):
+def install(packageName: str, packages, metadata=None, baseURL=baseURL):
+    pront("Downloading " + packageName)
+    try:
+        if metadata is None:
+            metadata = getMetadata(packageName, baseURL)
+        else:
+            pass
+        deps = metadata['dependencies']
+        if not hasNewerVer(packageName, metadata):
+            pront(f"Package {packageName} is already up to date.", GREEN)
+            if deps !="":
+                depUpdate = input("However, dependencies were found. Do you want to update dependencies? (Y/N): ").lower()
+                if depUpdate == "y":
+                    installDeps(deps, packages, packageName, baseURL)
+        elif deps != "":
+            installDeps(deps, packages, packageName, baseURL)
+            installp2(metadata, packageName, baseURL)
+            installp3(metadata, packageName)
+        else:
+            installp2(metadata, packageName, baseURL)
+            installp3(metadata, packageName)
+    except Exception as e:
+        match e:
+            case json.decoder.JSONDecodeError:
+                pront("Not found or some other JSON ded", RED)
+                pront("Abort", RED)
+            case _:
+                pront(e, RED)
+
+def locate(packageName: str, packages):
+    try:
+        packages2 = checkCache(packageListDir2, secondaryListURL).removeprefix("b").replace("'", "").split(", ")
+    except:
+        packages2 = ['uwu']
     if packageName.startswith("-"):
         pass
     elif packageName in packages:
-        pront("Downloading " + packageName)
-        try:
-            if metadata is None:
-                metadata = getMetadata(packageName)
-            else:
-                pass
-            deps = metadata['dependencies']
-            if not hasNewerVer(packageName, metadata):
-                pront(f"Package {packageName} is already up to date.", GREEN)
-                if deps !="":
-                    depUpdate = input("However, dependencies were found. Do you want to update dependencies? (Y/N): ").lower()
-                    if depUpdate == "y":
-                        installDeps(deps, packages, packageName)
-            elif deps != "":
-                installDeps(deps, packages, packageName)
-                installp2(metadata, packageName)
-                installp3(metadata, packageName)
-            else:
-                installp2(metadata, packageName)
-                installp3(metadata, packageName)
-        except Exception as e:
-            match e:
-                case json.decoder.JSONDecodeError:
-                    pront("Not found or some other JSON ded", RED)
-                    pront("Abort", RED)
-                case _:
-                    pront(e, RED)
+        install(packageName, packages)
+    elif packageName in packages2:
+        install(packageName, packages, metadata=None, baseURL=secondaryBaseURL)
     else:
         pront(f"Package {packageName} not found in wspm repositories.", RED)
         if os.name == "nt":
@@ -332,7 +346,7 @@ def cmdselector(packages: str, cmd):
         case "install":
             packageNames = processPKG()
             for packageName in packageNames:
-                install(packageName, packages)
+                locate(packageName, packages)
         case "remove":
             packageNames = processPKG()
             for packageName in packageNames:
@@ -363,6 +377,7 @@ def main():
     
 if "--force-pkglist-upd" in sys.argv:
     plainPackageStr = checkCache(packageListDir, listURL, True)
+    checkCache(packageListDir2, secondaryListURL, True)
 else:
     plainPackageStr = checkCache(packageListDir)
 packages = str(plainPackageStr).removeprefix("b").replace("'", "").split(", ")
