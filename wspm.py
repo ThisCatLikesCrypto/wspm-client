@@ -1,4 +1,5 @@
-#!TODO: Add backup secondary and ability to recognise when package was installed as a dependency, plus which source it was installed from
+#!/usr/bin/python3
+#TODO: Add backup secondary and ability to recognise when package was installed as a dependency, plus which source it was installed from
 
 import requests
 import json
@@ -115,7 +116,10 @@ def hasNewerVer(packageName, metadata):
         return False
 
 def download_file(url: str, backupType="base"):
-    pront("Retrieving " + url)
+    if url.endswith("/packages/"):
+        pront("Tried to retrieve packages/ (bug, need to figure out why in future)", YELLOW)
+    else:
+        pront("Retrieving " + url)
     try:
         response = requests.get(url)
         if response.status_code == 200:
@@ -157,6 +161,7 @@ def extract(packageName):
 
 
 def installp2(metadata, packageName, baseURL):
+    pront(f"Files: {metadata['files']}")
     files = metadata['files'].split(", ")
     oses = metadata['oses'].split(", ")
     if os.name not in oses and "universal" not in oses:
