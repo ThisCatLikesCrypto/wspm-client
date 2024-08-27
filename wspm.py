@@ -177,9 +177,9 @@ def installp2(metadata, packageName, baseURL):
 
 def installp3(metadata, packageName):
     if indexExists(metadata, 'installscript'):
-        pront("Running program's install.py...")
+        pront("Running program's installer...")
         os.chdir(os.path.join(packagedir, packageName))
-        os.system("python3 install.py")
+        os.system(f"python3 {metadata['installscript']}")
         os.chdir(wspmcwd)
     pront(f"Installation of package {packageName} success!", GREEN)
 
@@ -232,7 +232,7 @@ def install(packageName: str, packages, metadata=None, baseURL=baseURL):
 def locate(packageName: str, packages):
     try:
         packages2 = checkCache(packageListDir2, secondaryListURL).removeprefix("b").replace("'", "").split(", ")
-    except:
+    except TypeError:
         packages2 = ['uwu']
     if packageName.startswith("-"):
         pass
@@ -299,7 +299,13 @@ def remove(packageName):
             print("homebrew remove not implemented")
 
 
-def checkCache(file_path, fileURL=listURL, force=False):
+def checkCache(file_path, isSecondary=False, force=False):
+    if isSecondary:
+        fileURL = secondaryListURL
+        packageListDirectory = packageListDir2
+    else:
+        fileURL = listURL
+        packageListDirectory = packageListDir
     try:
         if os.path.exists(file_path):
             last_modified = os.path.getmtime(file_path)
@@ -318,8 +324,8 @@ def checkCache(file_path, fileURL=listURL, force=False):
     except:
         data = download_file(f"{fileURL}")
         saveFile(file_path, data)
-    
-    with open(packageListDir, "rb") as f:
+
+    with open(packageListDirectory, "rb") as f:
         return f.read()
 
 def processCMD():
@@ -382,10 +388,12 @@ def main():
     
 if "--force-pkglist-upd" in sys.argv:
     plainPackageStr = checkCache(packageListDir, listURL, True)
-    checkCache(packageListDir2, secondaryListURL, True)
+    plainPackageStr2 = checkCache(packageListDir2, secondaryListURL, True)
 else:
     plainPackageStr = checkCache(packageListDir)
+    plainPackageStr2 = checkCache(packageListDir2, secondaryListURL, True)
 packages = str(plainPackageStr).removeprefix("b").replace("'", "").split(", ")
+packages2 = str(plainPackageStr2).removeprefix("b").replace("'", "").split(", ")
 
 if __name__ == "__main__":
     main()
